@@ -6,6 +6,8 @@
     <title>Introducción a la Balística - 20 minutos</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <style>
         * {
             margin: 0;
@@ -1184,10 +1186,9 @@
             <h2>Fórmula Simplificada</h2>
             <div class="interactive-component">
                 <p>La ecuación de la trayectoria en condiciones ideales (sin resistencia del aire):</p>
-                <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; font-size: 1.1em; margin: 15px 0;">
-
-                    $$y = x \tan(\theta) - \frac{gx^2}{2v_0^2 \cos^2(\theta)}$$
-                </div>
+                    <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; font-size: 1.1em; margin: 15px 0;">
+                        $$y = x \tan(\theta) - \frac{gx^2}{2v_0^2 \cos^2(\theta)}$$
+                    </div>
                 <p style="font-size: 0.9em; color: #666; margin-top: 15px;">
                     Donde: y = altura, x = distancia horizontal, θ = ángulo, g = gravedad, v₀ = velocidad inicial
                 </p>
@@ -1643,13 +1644,58 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
+
+        function addFormulaAsImage(doc, yPos) {
+    // Crear canvas con la fórmula
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    canvas.width = 800;
+    canvas.height = 120;
+    
+    // Fondo blanco
+    ctx.fillStyle = '#f0f4ff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Borde izquierdo rojo
+    ctx.fillStyle = '#f5576c';
+    ctx.fillRect(0, 0, 8, canvas.height);
+    
+    // Borde general
+    ctx.strokeStyle = '#e0e0e0';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(0, 0, canvas.width, canvas.height);
+    
+    // Texto de la fórmula
+    ctx.fillStyle = '#1e3c72';
+    ctx.font = 'bold 36px "Courier New"';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('y = x·tan(θ) - (g·x²)/(2·v₀²·cos²(θ))', 400, 60);
+    
+    // Convertir a imagen
+    const imgData = canvas.toDataURL('image/png');
+    
+    // Agregar al PDF
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const marginLeft = 20;
+    const marginRight = 20;
+    const imgWidth = pageWidth - marginLeft - marginRight;
+    const imgHeight = (imgWidth * canvas.height) / canvas.width;
+    
+    doc.addImage(imgData, 'PNG', marginLeft, yPos - 5, imgWidth, imgHeight);
+    
+    return imgHeight;
+}
+
         // Descargar PDF
         function downloadPDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({
                 orientation: 'portrait',
                 unit: 'mm',
-                format: 'a4'
+                format: 'a4',
+                
             });
 
             // Configuración de márgenes y colores
@@ -1968,36 +2014,57 @@
         doc.setFont('Arial', 'normal');
         doc.setFontSize(10);
         doc.setTextColor(85, 85, 85);
-        let velocityText = doc.splitTextToSize('La velocidad inicial (v₀) es la velocidad del proyectil al abandonar el cañón. A mayor velocidad, mayor alcance y menor tiempo de vuelo. Depende de varios factores: tipo y cantidad de pólvora, calibre del arma, longitud del cañón y peso del proyectil. Un pequeño aumento en la velocidad inicial produce un aumento significativo en el alcance.', textWidth);
+        let velocityText = doc.splitTextToSize('La velocidad inicial es la velocidad del proyectil al abandonar el cañón. A mayor velocidad, mayor alcance y menor tiempo de vuelo. Depende de varios factores: tipo y cantidad de pólvora, calibre del arma, longitud del cañón y peso del proyectil. Un pequeño aumento en la velocidad inicial produce un aumento significativo en el alcance.', textWidth);
         doc.text(velocityText, marginLeft, yPosition);
         yPosition += velocityText.length * 4 + 5;
 
-        addSubtitle('Fórmula de la Trayectoria');
+        addSubtitle('\nFórmula de la Trayectoria');
 
-        checkPageBreak(15);
-        doc.setFont('Arial', 'normal');
-        doc.setFontSize(10);
-        doc.setTextColor(85, 85, 85);
-        doc.text('La ecuación de la trayectoria en condiciones ideales (sin resistencia del aire):', marginLeft, yPosition);
-        yPosition += 8;
+checkPageBreak(15);
+doc.setFont('Arial', 'normal');
+doc.setFontSize(10);
+doc.setTextColor(85, 85, 85);
+doc.text('La ecuación de la trayectoria en condiciones ideales (sin resistencia del aire):', marginLeft, yPosition);
+yPosition += 10;
 
-        doc.setFont('Arial', 'bold');
-        doc.setFontSize(11);
-        doc.setTextColor(30, 60, 114);
-        doc.text('y = x·tan(θ) - (gx²)/(2v₀²·cos²(θ))', marginLeft + 20, yPosition);
-        yPosition += 10;
+// ===== AGREGAR IMAGEN DE LA FÓRMULA =====
+const formulaHeight = addFormulaAsImage(doc, yPosition);
+yPosition += formulaHeight + 8;
 
-        doc.setFont('Arial', 'normal');
-        doc.setFontSize(10);
-        doc.setTextColor(85, 85, 85);
-        addList([
-            'y = altura del proyectil (metros)',
-            'x = distancia horizontal recorrida (metros)',
-            'θ (theta) = ángulo de salida (grados)',
-            'g = aceleración debido a la gravedad (9.8 m/s²)',
-            'v₀ = velocidad inicial del proyectil (m/s)',
-            'cos = función coseno'
-        ]);
+// ===== EXPLICACIÓN DE VARIABLES =====
+doc.setFont('Arial', 'normal');
+doc.setFontSize(10);
+doc.setTextColor(85, 85, 85);
+doc.text('Donde:', marginLeft, yPosition);
+yPosition += 6;
+
+// Lista de variables
+const variables = [
+    'y = altura del proyectil (metros)',
+    'x = distancia horizontal recorrida (metros)',
+    'θ (theta) = ángulo de salida (grados)',
+    'g = aceleración debido a la gravedad (9.8 m/s²)',
+    'v₀ = velocidad inicial del proyectil (m/s)',
+    'cos = función coseno'
+];
+
+doc.setFont('Arial', 'normal');
+doc.setFontSize(9);
+
+variables.forEach((variable) => {
+    // Viñeta
+    doc.setTextColor(245, 87, 108);
+    doc.text('•', marginLeft + 5, yPosition);
+    
+    // Texto
+    doc.setTextColor(85, 85, 85);
+    const textLines = doc.splitTextToSize(variable, textWidth - 15);
+    doc.text(textLines, marginLeft + 12, yPosition);
+    yPosition += textLines.length * 4 + 2;
+});
+
+yPosition += 3;
+
 
         // MÓDULO 5: CALIBRES Y CARTUCHOS
         addTitle('\nMódulo 5: Calibres y Cartuchos');
